@@ -29,114 +29,100 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Abrufen der Motorräder
+  async function getMotorcycles() {
+    if (!session) return;
+    const { data, error } = await supabase
+      .from("Motorrad")
+      .select("id, name, kauf_datum, marke (id, marke)") // marke wird aus Motorrad_Marke geladen
+      .eq("owner", session.user.id);
 
-// Abrufen der Motorräder
-async function getMotorcycles() {
-  if (!session) return;
-  const { data, error } = await supabase
-    .from("Motorrad")
-    .select("id, name, kauf_datum, marke (id, marke)") // marke wird aus Motorrad_Marke geladen
-    .eq("owner", session.user.id);
-
-  if (error) {
-    console.error("Fehler beim Abrufen der Motorräder:", error);
-  } else {
-    setMotorcycles(data);
-  }
-}
-
-// Abrufen der Marken
-async function getBrands() {
-  const { data, error } = await supabase.from("Motorrad_Marke").select("id, marke");
-
-  if (error) {
-    console.error("Fehler beim Abrufen der Marken:", error);
-  } else {
-    console.log("Marken erfolgreich abgerufen:", data);
-    setBrands(data);
-  }
-}
-
-// Hinzufügen eines neuen Motorrads
-async function addMotorcycle(e) {
-  e.preventDefault();
-  if (!newMotorcycle.marke || !newMotorcycle.name.trim()) {
-    alert("Bitte wählen Sie eine Marke und geben Sie ein Modell ein.");
-    return;
+    if (error) {
+      console.error("Fehler beim Abrufen der Motorräder:", error);
+    } else {
+      setMotorcycles(data);
+    }
   }
 
-  const { error } = await supabase.from("Motorrad").insert([{
-    marke: newMotorcycle.marke,
-    name: newMotorcycle.name,
-    kauf_datum: newMotorcycle.kauf_datum,
-    owner: session.user.id,
-  }]);
+  // Abrufen der Marken
+  async function getBrands() {
+    const { data, error } = await supabase.from("Motorrad_Marke").select("id, marke");
 
-  if (error) {
-    console.error("Fehler beim Hinzufügen des Motorrads:", error);
-  } else {
-    setNewMotorcycle({ marke: "", name: "", kauf_datum: "" });
-    getMotorcycles(); // Liste neu laden
-  }
-}
-
-// Hinzufügen einer neuen Marke
-async function addBrand(e) {
-  e.preventDefault();
-  if (!newBrand.trim()) {
-    alert("Bitte geben Sie eine Marke ein.");
-    return;
+    if (error) {
+      console.error("Fehler beim Abrufen der Marken:", error);
+    } else {
+      setBrands(data);
+    }
   }
 
-  const { error } = await supabase.from("Motorrad_Marke").insert([{ marke: newBrand }]);
+  // Hinzufügen eines neuen Motorrads
+  async function addMotorcycle(e) {
+    e.preventDefault();
+    if (!newMotorcycle.marke || !brands.some(brand => brand.id === newMotorcycle.marke)) {
+      alert("Bitte wählen Sie eine gültige Marke und geben Sie ein Modell ein.");
+      return;
+    }
 
-  if (error) {
-    console.error("Fehler beim Hinzufügen der Marke:", error);
-  } else {
-    setNewBrand("");
-    getBrands(); // Liste der Marken neu laden
+    const { error } = await supabase.from("Motorrad").insert([{
+      marke: newMotorcycle.marke,
+      name: newMotorcycle.name,
+      kauf_datum: newMotorcycle.kauf_datum,
+      owner: session.user.id,
+    }]);
+
+    if (error) {
+      console.error("Fehler beim Hinzufügen des Motorrads:", error);
+    } else {
+      setNewMotorcycle({ marke: "", name: "", kauf_datum: "" });
+      getMotorcycles(); // Liste neu laden
+    }
   }
-}
 
-// Bearbeiten eines Motorrads
-async function updateMotorcycle(id, marke, name, kauf_datum) {
-  const { error } = await supabase
-    .from("Motorrad")
-    .update({ marke: marke, name, kauf_datum })
-    .eq("id", id);
+  // Hinzufügen einer neuen Marke
+  async function addBrand(e) {
+    e.preventDefault();
+    if (!newBrand.trim()) {
+      alert("Bitte geben Sie eine Marke ein.");
+      return;
+    }
 
-  if (error) {
-    console.error("Fehler beim Aktualisieren des Motorrads:", error);
-  } else {
-    getMotorcycles();
+    const { error } = await supabase.from("Motorrad_Marke").insert([{ marke: newBrand }]);
+
+    if (error) {
+      console.error("Fehler beim Hinzufügen der Marke:", error);
+    } else {
+      setNewBrand("");
+      getBrands(); // Liste der Marken neu laden
+    }
   }
-}
 
-// Löschen eines Motorrads
-async function deleteMotorcycle(id) {
-  const { error } = await supabase
-    .from("Motorrad")
-    .delete()
-    .eq("id", id);
+  // Bearbeiten eines Motorrads
+  async function updateMotorcycle(id, marke, name, kauf_datum) {
+    const { error } = await supabase
+      .from("Motorrad")
+      .update({ marke: marke, name, kauf_datum })
+      .eq("id", id);
 
-  if (error) {
-    console.error("Fehler beim Löschen des Motorrads:", error);
-  } else {
-    getMotorcycles();
+    if (error) {
+      console.error("Fehler beim Aktualisieren des Motorrads:", error);
+    } else {
+      getMotorcycles();
+    }
   }
-}
 
-if (!session) {
-  return (
-    <Auth
-      supabaseClient={supabase}
-      appearance={{ theme: ThemeSupa }}
-      theme="dark"
-    />
-  );
-}
+  // Löschen eines Motorrads
+  async function deleteMotorcycle(id) {
+    const { error } = await supabase
+      .from("Motorrad")
+      .delete()
+      .eq("id", id);
 
-
+    if (error) {
+      console.error("Fehler beim Löschen des Motorrads:", error);
+    } else {
+      getMotorcycles();
+    }
+  }
 
   if (!session) {
     return (
@@ -152,6 +138,7 @@ if (!session) {
     <div>
       <h1>Meine Motorräder</h1>
 
+      {/* Formular zum Hinzufügen einer Marke */}
       <form onSubmit={addBrand}>
         <input
           type="text"
@@ -162,13 +149,13 @@ if (!session) {
         <button type="submit">Marke hinzufügen</button>
       </form>
 
+      {/* Formular zum Hinzufügen eines Motorrads */}
       <form onSubmit={addMotorcycle}>
         <select
           value={newMotorcycle.marke}
-          onChange={(e) => setNewMotorcycle({ ...newMotorcycle, marke: e.target.value })}
+          onChange={(e) => setNewMotorcycle({ ...newMotorcycle, marke: parseInt(e.target.value) })}
         >
-         <option value="">Marke wählen</option>
-          {console.log("Brands:", brands)} {/* Debugging */}
+          <option value="">Marke wählen</option>
           {brands.map((brand) => (
             <option key={brand.id} value={brand.id}>{brand.marke}</option>
           ))}
@@ -190,7 +177,7 @@ if (!session) {
         <button type="submit">Motorrad hinzufügen</button>
       </form>
 
-
+      {/* Liste der Motorräder */}
       <h2>Motorrad Liste</h2>
       <ul>
         {motorcycles.map((motorcycle) => (
