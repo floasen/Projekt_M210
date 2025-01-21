@@ -13,7 +13,7 @@ const supabase = createClient(
 function App() {
   const [motorcycles, setMotorcycles] = useState([]);
   const [brands, setBrands] = useState([]);
-  const [newMotorcycle, setNewMotorcycle] = useState({ marke_id: "", name: "", kauf_datum: "" });
+  const [newMotorcycle, setNewMotorcycle] = useState({ marke: "", name: "", kauf_datum: "" });
   const [newBrand, setNewBrand] = useState("");
   const [session, setSession] = useState(null);
 
@@ -58,13 +58,13 @@ function App() {
   // Hinzufügen eines neuen Motorrads
   async function addMotorcycle(e) {
     e.preventDefault();
-    if (!newMotorcycle.marke_id || !newMotorcycle.name.trim()) {
-      alert("Bitte wählen Sie eine Marke und geben Sie ein Modell ein.");
+    if (!newMotorcycle.marke || !brands.some(brand => brand.id === newMotorcycle.marke)) {
+      alert("Bitte wählen Sie eine gültige Marke und geben Sie ein Modell ein.");
       return;
     }
 
     const { error } = await supabase.from("Motorrad").insert([{
-      marke: newMotorcycle.marke_id,
+      marke: newMotorcycle.marke,
       name: newMotorcycle.name,
       kauf_datum: newMotorcycle.kauf_datum,
       owner: session.user.id,
@@ -73,7 +73,7 @@ function App() {
     if (error) {
       console.error("Fehler beim Hinzufügen des Motorrads:", error);
     } else {
-      setNewMotorcycle({ marke_id: "", name: "", kauf_datum: "" });
+      setNewMotorcycle({ marke: "", name: "", kauf_datum: "" });
       getMotorcycles(); // Liste neu laden
     }
   }
@@ -97,10 +97,10 @@ function App() {
   }
 
   // Bearbeiten eines Motorrads
-  async function updateMotorcycle(id, marke_id, name, kauf_datum) {
+  async function updateMotorcycle(id, marke, name, kauf_datum) {
     const { error } = await supabase
       .from("Motorrad")
-      .update({ marke: marke_id, name, kauf_datum })
+      .update({ marke: marke, name, kauf_datum })
       .eq("id", id);
 
     if (error) {
@@ -152,8 +152,8 @@ function App() {
       {/* Formular zum Hinzufügen eines Motorrads */}
       <form onSubmit={addMotorcycle}>
         <select
-          value={newMotorcycle.marke_id}
-          onChange={(e) => setNewMotorcycle({ ...newMotorcycle, marke_id: e.target.value })}
+          value={newMotorcycle.marke}
+          onChange={(e) => setNewMotorcycle({ ...newMotorcycle, marke: parseInt(e.target.value) })}
         >
           <option value="">Marke wählen</option>
           {brands.map((brand) => (
